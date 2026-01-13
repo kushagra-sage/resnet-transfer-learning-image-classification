@@ -1,4 +1,3 @@
-```markdown
 # ResNet Transfer Learning for Image Classification
 
 This project implements transfer learning using ResNet architectures for image classification tasks using PyTorch. The objective is to benchmark pretrained ResNet models and fine-tune them on a custom image dataset to achieve high accuracy with limited training data.
