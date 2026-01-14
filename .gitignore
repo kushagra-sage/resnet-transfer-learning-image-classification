@@ -1,0 +1,18 @@
+# Datasets 
+data/
+datasets/
+
+# Model weights
+*.pt
+*.pth
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+env/
+
+# OS files
+.DS_Store
