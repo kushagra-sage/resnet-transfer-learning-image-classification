@@ -5,11 +5,14 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+# -------------------------------------------------
+# Add project root to Python path
+# -------------------------------------------------
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, PROJECT_ROOT)
 
 from src.data.dataloader import get_dataloaders
-from src.models.resnet import get_resnet18
+from src.models.resnet import get_resnet
 from src.training.train import (
     train_one_epoch,
     evaluate,
@@ -18,7 +21,7 @@ from src.training.train import (
 )
 
 # ===================== CONFIG =====================
-DEBUG_MODE = True   # True = CPU debug | False = full GPU training
+DEBUG_MODE = True   # True = fast CPU debug | False = full training
 
 DATA_DIR = "data/intel_glacier"
 NUM_CLASSES = 6
@@ -40,31 +43,36 @@ def main():
     print("Device:", DEVICE)
     print("Debug mode:", DEBUG_MODE)
 
+    # ---------------- Dataloaders ----------------
     train_loader, val_loader, _ = get_dataloaders(
         data_dir=DATA_DIR,
         batch_size=BATCH_SIZE
     )
 
-    model = get_resnet18(
+    # ---------------- Model ----------------
+    model = get_resnet(
+        variant="resnet18",
         num_classes=NUM_CLASSES,
         pretrained=True,
-        freeze_backbone=False
+        dropout_rate=0.0
     )
     model.to(DEVICE)
 
+    # ---------------- Training Setup ----------------
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     start_epoch = 0
     best_acc = 0.0
 
-    #  Resume if checkpoint exists
+    # Resume training if checkpoint exists
     if os.path.exists(CHECKPOINT_PATH):
         print("Resuming training from checkpoint...")
         model, optimizer, start_epoch, best_acc = load_checkpoint(
             model, optimizer, CHECKPOINT_PATH, DEVICE
         )
 
+    # ---------------- Training Loop ----------------
     start_time = time.time()
 
     for epoch in range(start_epoch, EPOCHS):
@@ -83,16 +91,18 @@ def main():
             f"Val   Loss: {val_loss:.4f} | Val   Acc: {val_acc:.4f}"
         )
 
-        #  Save checkpoint every epoch
+        # Save checkpoint
         save_checkpoint(
             {
-                "epoch": epoch,
+                "epoch": epoch + 1,
                 "model_state": model.state_dict(),
                 "optimizer_state": optimizer.state_dict(),
                 "best_acc": max(best_acc, val_acc),
             },
             CHECKPOINT_PATH
         )
+
+        best_acc = max(best_acc, val_acc)
 
     total_time = time.time() - start_time
     print(f"\nTraining completed in {total_time:.2f} seconds")
